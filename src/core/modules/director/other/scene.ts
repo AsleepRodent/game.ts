@@ -13,6 +13,7 @@ export class Scene {
     public index: number
     public cast: Actor[]
     public enabled: boolean
+    [key: string]: any;
 
     constructor(attributes: SceneAttributes) {
         this.parent = attributes.parent;

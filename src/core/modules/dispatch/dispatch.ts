@@ -1,15 +1,27 @@
 import { Module, type ModuleAttributes } from "../module.js";
 import { Signal } from "./other/signal.js";
-import type { Loop } from "../loop/loop.js";
 
 interface DispatchAttributes extends ModuleAttributes {}
 
 export class Dispatch extends Module {
     public signals: Record<string, Signal>;
+    [key: string]: any;
 
     constructor(attributes: DispatchAttributes) {
         super(attributes);
         this.signals = {};
+
+        return new Proxy(this, {
+            get: (target, prop: string | symbol) => {
+                if (prop in target) return (target as any)[prop];
+
+                if (typeof prop === "string") {
+                    const signal = target.getFromSignals(prop);
+                    if (signal) return signal;
+                }
+                return undefined;
+            }
+        });
     }
 
     public getFromSignals(target: string): Signal | undefined {
@@ -17,7 +29,7 @@ export class Dispatch extends Module {
 
         for (const key in this.signals) {
             const signal = this.signals[key];
-            if (signal && (signal.name === target || signal.id === target)) {
+            if (signal && (signal.id === target || signal.name === target)) {
                 return signal;
             }
         }
@@ -26,7 +38,7 @@ export class Dispatch extends Module {
 
     public addToSignals(signal: Signal): void {
         const exists = Object.values(this.signals).some(
-            s => s === signal || (s.name === signal.name && s.id === signal.id)
+            s => s === signal || s.id === signal.id
         );
 
         if (!exists) {
@@ -35,8 +47,8 @@ export class Dispatch extends Module {
     }
 
     public removeFromSignals(target: Signal | string): void {
-        const identifier = typeof target === "string" ? target : target.name;
-
+        const id = typeof target === "string" ? target : target.id;
+        
         if (typeof target === "string" && this.signals[target]) {
             delete this.signals[target];
             return;
@@ -44,7 +56,7 @@ export class Dispatch extends Module {
 
         for (const key in this.signals) {
             const signal = this.signals[key];
-            if (signal && (signal.name === identifier || signal.id === identifier)) {
+            if (signal && (signal.id === id || signal.name === id)) {
                 delete this.signals[key];
                 break;
             }
@@ -52,16 +64,6 @@ export class Dispatch extends Module {
     }
 
     public override start(): void {
-        if (!this.enabled) {
-            const loop = this.parent.modules.loop as Loop;
-            if (loop) {
-                loop.addToQueue(this, 0);
-            }
-            this.enabled = true;
-        }
-    }
-
-    public override update(dt: number): void {
-        if (!this.enabled) return;
+        this.enabled = true;
     }
 }

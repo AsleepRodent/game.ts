@@ -15,6 +15,7 @@ export class Actor {
     public cast: Actor[]
     public traits: Record<string, Trait>
     public enabled: boolean
+    [key: string]: any;
 
     constructor(attributes: ActorAttributes) {
         this.parent = attributes.parent;
