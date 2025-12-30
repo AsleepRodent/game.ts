@@ -1,6 +1,7 @@
 import { Module, type ModuleAttributes } from "../module.js";
 import { Loop } from "../loop/loop.js";
 import { Renderer } from "../renderer/renderer.js";
+import { Director } from "../director/director.js";
 
 export interface GameAttributes extends ModuleAttributes {}
 
@@ -11,19 +12,25 @@ export class Game extends Module {
         super(attributes);
         this.modules = {
             "loop": new Loop({parent:this}),
-            "renderer": new Renderer({parent:this})
+            "renderer": new Renderer({parent:this}),
+            "director": new Director({parent:this})
         }
     }
 
     public onStart(): void {}
     public onUpdate(dt: number): void {}
 
-    public start(): void {
+    public override start(): void {
         this.modules.renderer!.start()
+        this.modules.director!.start()
         this.modules.loop!.start()
         this.enabled = true
     } 
-    public stop(): void {
+
+    public override stop(): void {
+        this.modules.renderer!.stop()
+        this.modules.director!.stop()
+        this.modules.loop!.stop()
         this.enabled = false
     }
 }

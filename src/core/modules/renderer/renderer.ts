@@ -13,7 +13,7 @@ export class Renderer extends Module {
         this.window = new Window({parent:this, title:this.parent.name})
     }
     
-    public render(): void {
+    public override render(): void {
         if (this.enabled) {
             r.BeginDrawing();
             r.ClearBackground(r.RAYWHITE);
@@ -31,11 +31,11 @@ export class Renderer extends Module {
         }
     }
 
-    public start(): void {
+    public override start(): void {
         if (!this.enabled) {
-            const loop = this.parent.modules.loop
+            const loop: Loop = this.parent.modules.loop
             if (loop) {
-                loop.add(this, 0)
+                loop.addToQueue(this, 0)
             }
             this.window.open()
             this.enabled = true

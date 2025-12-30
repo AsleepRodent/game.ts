@@ -2,7 +2,7 @@ import { Module, type ModuleAttributes } from "../module.js";
 import type { Game } from "../game/game.js";
 import type { Renderer } from "../renderer/renderer.js";
 
-import r from 'raylib'
+import r from "raylib"
 
 interface LoopAttributes extends ModuleAttributes {}
 
@@ -11,30 +11,24 @@ export class Loop extends Module {
 
     constructor(attributes: LoopAttributes) {
         super(attributes)
-        this.queue = [[], [], [], [], []]
+        this.queue = [[], [], [], [], []];
     }
 
-    public add(module: Module, layer: number): void {
+    public addToQueue(module: Module, layer: number): void {
         if (layer >= 0 && layer < this.queue.length) {
-            let exists = false;
-            for (const l of this.queue) {
-                if (l.includes(module)) {
-                    exists = true;
-                    break;
-                }
-            }
+            const exists = this.queue.some(l => l.some(m => m.id === module.id));
+
             if (!exists) {
-                const selectedLayer = this.queue[layer];
-                if (selectedLayer) {
-                    selectedLayer.push(module);
-                }
+                this.queue[layer]!.push(module);
             }
         }
     }
 
-    public remove(module: Module): void {
+    public removeFromQueue(target: Module | string): void {
+        const idToFind = typeof target === "string" ? target : target.id;
+
         for (const layer of this.queue) {
-            const index = layer.indexOf(module);
+            const index = layer.findIndex(m => m.id === idToFind);
             if (index !== -1) {
                 layer.splice(index, 1);
                 break;
@@ -44,25 +38,31 @@ export class Loop extends Module {
 
     private run(): void {
         if (this.enabled) {
-            const renderer: Renderer = this.parent.modules.renderer;
+            const renderer = this.parent.modules.renderer as Renderer;
             (this.parent as Game).onStart?.();
+
             while (this.enabled && !r.WindowShouldClose()) {
                 const dt: number = r.GetFrameTime();
+
                 for (const layer of this.queue) {
                     for (const module of layer) {
-                        (module as Module).update?.(dt);
+                        if (module.enabled) {
+                            module.update(dt);
+                        }
                     }
                 }
-                if (renderer) {
-                    (renderer as Renderer).render?.();
+
+                if (renderer && renderer.enabled) {
+                    renderer.render();
                 }
+
                 (this.parent as Game).onUpdate?.(dt);
             }
             this.stop();
         }
     }
     
-    public start(): void {
+    public override start(): void {
         if (!this.enabled) {
             this.enabled = true
             this.run()
